@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SIREKSI - Sistem Rekap Skripsi</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+    .nav-active { background-color: #e0e7ff; color: #4338ca; border-right: 4px solid #4338ca; }
+    .modal { transition: opacity 0.25s ease; }
+    body.modal-active { overflow: hidden !important; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f1f1; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    
+    @media print {
+      body { background-color: white !important; }
+      #main-content { overflow: visible !important; }
+      .print-hidden { display: none !important; }
+      .print-block { display: block !important; }
+      .print-w-full { width: 100% !important; margin: 0 !important; padding: 0 !important; }
+      .print-border { border: 1px solid #e5e7eb !important; }
+    }
+  </style>
+</head>
+<body class="text-gray-800 antialiased">
+
+  <div id="sidebarOverlay" onclick="toggleMobileMenu()" class="fixed inset-0 bg-black/40 z-30 hidden opacity-0 transition-opacity duration-300 print-hidden"></div>
+
+  <div class="flex h-screen overflow-hidden print-w-full">
+    
+    <aside id="sidebar" class="fixed inset-y-0 left-0 w-64 bg-white shadow-xl flex flex-col z-40 transition-transform duration-300 transform -translate-x-full md:translate-x-0 md:relative md:shadow-lg flex-shrink-0 print-hidden">
+      <div class="h-16 flex items-center justify-between px-6 border-b border-gray-100">
+        <div class="flex items-center">
+          <i class="fas fa-graduation-cap text-indigo-600 text-2xl mr-3"></i>
+          <span class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-blue-500">SIREKSI</span>
+        </div>
+        <button onclick="toggleMobileMenu()" class="md:hidden text-gray-400 hover:text-gray-600 focus:outline-none">
+          <i class="fas fa-times text-lg"></i>
+        </button>
+      </div>
+      <nav class="flex-1 py-4 space-y-1 overflow-y-auto">
+        <a href="#" onclick="showPage('dashboard')" id="nav-dashboard" class="flex items-center px-6 py-3 text-gray-600 hover:bg-gray-50 nav-active">
+          <i class="fas fa-chart-pie w-6"></i> <span>Dashboard</span>
+        </a>
+        <a href="#" onclick="showPage('dosen')" id="nav-dosen" class="flex items-center px-6 py-3 text-gray-600 hover:bg-gray-50">
+          <i class="fas fa-chalkboard-teacher w-6"></i> <span>Data Dosen</span>
+        </a>
+        <a href="#" onclick="showPage('mahasiswa')" id="nav-mahasiswa" class="flex items-center px-6 py-3 text-gray-600 hover:bg-gray-50">
+          <i class="fas fa-user-graduate w-6"></i> <span>Data Mahasiswa</span>
+        </a>
+        <a href="#" onclick="showPage('rekap')" id="nav-rekap" class="flex items-center px-6 py-3 text-gray-600 hover:bg-gray-50">
+          <i class="fas fa-filter w-6"></i> <span>Rekap Data Lanjutan</span>
+        </a>
+      </nav>
+    </aside>
+
+    <div class="flex-1 flex flex-col h-screen overflow-hidden print-w-full">
+      <header class="h-16 bg-white shadow-sm flex items-center justify-between px-4 sm:px-6 z-10 print-hidden">
+        <div class="flex items-center">
+          <button onclick="toggleMobileMenu()" class="md:hidden text-gray-500 hover:text-indigo-600 focus:outline-none mr-3 p-1">
+            <i class="fas fa-bars text-xl"></i>
+          </button>
+          <h2 class="text-base sm:text-xl font-semibold text-gray-700 truncate" id="page-title">Dashboard Analitik</h2>
+        </div>
+        <div class="flex items-center space-x-3">
+          <span class="text-sm text-gray-500 hidden sm:block">Admin Prodi</span>
+          <div class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold shadow-sm">A</div>
+        </div>
+      </header>
+
+      <main class="flex-1 overflow-y-auto p-4 sm:p-6 bg-gray-50 print-w-full" id="main-content">
+        
+        <!-- DASHBOARD PAGE -->
+        <div id="page-dashboard" class="page-section print-hidden">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6">
+            <div class="bg-white rounded-xl shadow-sm p-5 border-l-4 border-indigo-500 flex items-center justify-between">
+              <div><p class="text-sm text-gray-500 mb-1">Total Mahasiswa</p><h3 class="text-2xl font-bold text-gray-800" id="dash-total">0</h3></div>
+              <div class="w-11 h-12 bg-indigo-50 rounded-full flex items-center justify-center text-indigo-500 text-xl"><i class="fas fa-users"></i></div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm p-5 border-l-4 border-yellow-400 flex items-center justify-between">
+              <div><p class="text-sm text-gray-500 mb-1">Menunggu Sempro</p><h3 class="text-2xl font-bold text-gray-800" id="dash-pengajuan">0</h3></div>
+              <div class="w-12 h-12 bg-yellow-50 rounded-full flex items-center justify-center text-yellow-500 text-xl"><i class="fas fa-file-alt"></i></div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm p-5 border-l-4 border-blue-500 flex items-center justify-between">
+              <div><p class="text-sm text-gray-500 mb-1">Sudah Sempro</p><h3 class="text-2xl font-bold text-gray-800" id="dash-sempro">0</h3></div>
+              <div class="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center text-blue-500 text-xl"><i class="fas fa-presentation-screen"></i></div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm p-5 border-l-4 border-green-500 flex items-center justify-between">
+              <div><p class="text-sm text-gray-500 mb-1">Selesai (PDD)</p><h3 class="text-2xl font-bold text-gray-800" id="dash-pdd">0</h3></div>
+              <div class="w-12 h-12 bg-green-50 rounded-full flex items-center justify-center text-green-500 text-xl"><i class="fas fa-check-circle"></i></div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <div class="bg-white rounded-xl shadow-sm p-4 sm:p-6 flex flex-col justify-center"><h3 class="text-base sm:text-lg font-semibold mb-4 text-gray-700">Proporsi Status Skripsi</h3><div class="relative w-full max-w-sm mx-auto"><canvas id="statusChart" height="250"></canvas></div></div>
+            <div class="bg-white rounded-xl shadow-sm p-4 sm:p-6"><h3 class="text-base sm:text-lg font-semibold mb-4 text-gray-700">Beban Bimbingan Dosen</h3><canvas id="dosenChart" height="250"></canvas></div>
+          </div>
+
+          <div class="bg-white rounded-xl shadow-sm p-4 sm:p-6">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3 border-b pb-3">
+              <div>
+                <h3 class="text-base sm:text-lg font-semibold text-gray-700"><i class="fas fa-map-marked-alt text-indigo-600 mr-2"></i>Pemetaan Kluster Riset Skripsi</h3>
+                <p class="text-xs text-gray-500 mt-0.5">Analisis tren topik dominan mahasiswa berdasarkan tahun angkatan</p>
+              </div>
+              <div>
+                <select id="dash-filter-tahun" onchange="updateBidangChart()" class="w-full sm:w-auto px-3 py-2 border rounded-lg text-sm bg-gray-50 font-medium text-gray-700 focus:ring-2 focus:ring-indigo-500 outline-none shadow-sm">
+                  <option value="">-- Semua Tahun --</option>
+                </select>
+              </div>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-center">
+              <div class="lg:col-span-2 min-h-[320px] relative">
+                <canvas id="bidangChart"></canvas>
+              </div>
+              <div class="bg-gradient-to-br from-indigo-50 to-blue-50/50 rounded-xl p-5 border border-indigo-100 shadow-sm">
+                <h4 class="text-xs font-bold text-indigo-900 uppercase tracking-wider mb-4"><i class="fas fa-lightbulb mr-1.5 text-amber-500"></i>Analisis Tren Angkatan</h4>
+                <div class="space-y-4 text-sm">
+                  <div>
+                    <span class="text-gray-500 block text-xs font-medium">Topik / Bidang Dominan:</span>
+                    <span id="insight-dominan" class="font-bold text-gray-800 text-xs sm:text-sm bg-white px-2.5 py-1 rounded-md border inline-block mt-1 shadow-sm text-indigo-700">-</span>
+                  </div>
+                  <div>
+                    <span class="text-gray-500 block text-xs font-medium">Total Judul Terklasifikasi:</span>
+                    <span id="insight-count" class="font-extrabold text-gray-800 text-lg">0</span> <span class="text-xs text-gray-500">Skripsi</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- DATA DOSEN PAGE -->
+        <div id="page-dosen" class="page-section hidden print-hidden">
+          <div class="bg-white rounded-xl shadow-sm p-4 sm:p-6">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-3">
+              <h3 class="text-lg font-semibold text-gray-700">Daftar Dosen Pembimbing</h3>
+              <button onclick="openModalDosen()" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-lg shadow text-sm font-medium transition"><i class="fas fa-plus mr-2"></i>Tambah Dosen</button>
+            </div>
+            <div class="overflow-x-auto rounded-lg border border-gray-200">
+              <table class="min-w-full divide-y divide-gray-200 text-sm">
+                <thead class="bg-gray-50"><tr><th class="px-4 py-3 text-left font-semibold text-gray-500 uppercase whitespace-nowrap">Nama Dosen</th><th class="px-4 py-3 text-left font-semibold text-gray-500 uppercase whitespace-nowrap">NIP/NIDN</th><th class="px-4 py-3 text-left font-semibold text-gray-500 uppercase whitespace-nowrap">Prodi</th><th class="px-6 py-3 text-center font-semibold text-gray-500 uppercase whitespace-nowrap">Beban Bimbingan</th><th class="px-4 py-3 text-center font-semibold text-gray-500 uppercase whitespace-nowrap">Aksi</th></tr></thead>
+                <tbody id="tbl-dosen" class="bg-white divide-y divide-gray-200"><tr><td colspan="5" class="text-center p-4">Memuat data...</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- DATA MAHASISWA PAGE -->
+        <div id="page-mahasiswa" class="page-section hidden print-hidden">
+          <div class="bg-white rounded-xl shadow-sm p-4 sm:p-6">
+            <div class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center mb-6 gap-4">
+              <div class="relative flex-1">
+                <i class="fas fa-search absolute left-3 top-3.5 text-gray-400"></i>
+                <input type="text" id="searchMhs" onkeyup="filterMahasiswa()" placeholder="Cari Nama / NIM / Bidang Kajian..." class="w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm shadow-inner">
+              </div>
+              <button onclick="openModalMhs()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-lg shadow text-sm font-medium transition whitespace-nowrap"><i class="fas fa-plus mr-2"></i>Tambah Mahasiswa</button>
+            </div>
+            <div class="overflow-x-auto rounded-lg border border-gray-200">
+              <table class="min-w-full divide-y divide-gray-200 text-sm">
+                <thead class="bg-gray-50"><tr><th class="px-4 py-3 text-left font-semibold text-gray-500 uppercase whitespace-nowrap">Mahasiswa</th><th class="px-4 py-3 text-left font-semibold text-gray-500 uppercase whitespace-nowrap">Dosen Pembimbing</th><th class="px-4 py-3 text-left font-semibold text-gray-500 uppercase whitespace-nowrap">Status & Progress</th><th class="px-4 py-3 text-left font-semibold text-gray-500 uppercase whitespace-nowrap">Tanggal PDD</th><th class="px-4 py-3 text-center font-semibold text-gray-500 uppercase whitespace-nowrap">Aksi</th></tr></thead>
+                <tbody id="tbl-mhs" class="bg-white divide-y divide-gray-200"><tr><td colspan="5" class="text-center p-4">Memuat data...</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- REKAP ADVANCED PAGE -->
+        <div id="page-rekap" class="page-section hidden">
+          
+          <!-- PETA GLOBAL & TREN PDD -->
+          <div class="bg-white rounded-xl shadow-sm p-4 sm:p-6 mb-6 print-hidden">
+            <h3 class="text-base sm:text-lg font-semibold text-gray-700 mb-4 border-b pb-3"><i class="fas fa-globe-asia text-indigo-500 mr-2"></i>Peta Global Rekapitulasi</h3>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <!-- Chart 1: Rekap Per Bidang -->
+              <div class="flex flex-col">
+                <h4 class="text-xs font-bold text-gray-500 uppercase mb-3 text-center tracking-wider">Distribusi Seluruh Bidang Kajian</h4>
+                <div class="relative w-full h-[280px]">
+                  <canvas id="rekapBidangChart"></canvas>
+                </div>
+              </div>
+              
+              <!-- Chart 2: Rekap Per Bulan PDD DENGAN FILTER TAHUN -->
+              <div class="flex flex-col border-t pt-6 lg:border-t-0 lg:pt-0 lg:border-l lg:pl-8">
+                <div class="flex justify-between items-center mb-3">
+                  <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wider">Tren Pendadaran (Bulanan)</h4>
+                  <select id="filter-pdd-tahun" onchange="updatePddChart()" class="text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 rounded focus:ring-indigo-500 focus:border-indigo-500 py-1 pl-2 pr-6 outline-none shadow-sm cursor-pointer">
+                    <option value="">-- Semua Tahun --</option>
+                  </select>
+                </div>
+                <div class="relative w-full h-[280px]">
+                  <canvas id="rekapBulanChart"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-xl shadow-sm p-4 sm:p-6 mb-6 print-hidden">
+            <h3 class="text-base font-semibold text-gray-700 mb-4 border-b pb-2"><i class="fas fa-filter text-indigo-500 mr-2"></i>Filter Laporan & Export</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+              <div>
+                <label class="block text-xs font-semibold text-gray-500 uppercase mb-2">Dosen Pembimbing:</label>
+                <select id="select-rekap-dosen" onchange="renderRekapAdvanced()" class="w-full px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-gray-50 text-sm truncate">
+                  <option value="">-- Semua Dosen --</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-gray-500 uppercase mb-2">Angkatan:</label>
+                <select id="select-rekap-angkatan" onchange="renderRekapAdvanced()" class="w-full px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-gray-50 text-sm">
+                  <option value="">-- Semua Angkatan --</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-gray-500 uppercase mb-2">Bidang Kajian:</label>
+                <select id="select-rekap-bidang" onchange="renderRekapAdvanced()" class="w-full px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-gray-50 text-sm truncate">
+                  <option value="">-- Semua Bidang --</option>
+                  <option value="Ekonomi & Industri Halal">Ekonomi & Industri Halal</option>
+                  <option value="Filantropi ZISWAF">Filantropi ZISWAF</option>
+                  <option value="Perbankan Syariah">Perbankan Syariah</option>
+                  <option value="Keuangan Non-Bank Syariah">Keuangan Non-Bank Syariah</option>
+                  <option value="Pasar Modal Syariah">Pasar Modal Syariah</option>
+                  <option value="Pemikiran Ekonomi Islam">Pemikiran Ekonomi Islam</option>
+                  <option value="Kewirausahaan, UMKM & BUMDes">Kewirausahaan, UMKM & BUMDes</option>
+                  <option value="Pembangunan Berkelanjutan (Green Economy)">Green Economy</option>
+                  <option value="Lainnya / Tidak Terklasifikasi">Lainnya</option>
+                </select>
+              </div>
+
+              <div class="flex gap-2 w-full mt-2 lg:mt-0">
+                <button onclick="resetRekap()" class="w-1/3 bg-gray-200 hover:bg-gray-300 text-gray-700 py-2.5 rounded-lg text-sm font-medium transition" title="Reset Filter"><i class="fas fa-undo"></i></button>
+                <button onclick="exportToExcel()" id="btn-export" disabled class="w-1/3 bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white py-2.5 rounded-lg text-sm shadow transition" title="Export ke Excel"><i class="fas fa-file-excel"></i></button>
+                <button onclick="window.print()" id="btn-print" disabled class="w-1/3 bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white py-2.5 rounded-lg text-sm shadow transition" title="Cetak PDF"><i class="fas fa-file-pdf"></i></button>
+              </div>
+            </div>
+          </div>
+
+          <div id="rekap-empty-state" class="bg-indigo-50 rounded-xl p-6 sm:p-8 text-center text-indigo-400 print-hidden">
+            <i class="fas fa-hand-pointer text-4xl mb-3"></i>
+            <p class="font-medium text-sm sm:text-base">Silakan tentukan Filter Dosen, Angkatan, atau Bidang untuk menarik rekapitulasi.</p>
+          </div>
+
+          <div id="rekap-container" class="hidden bg-white rounded-xl shadow-sm p-4 sm:p-6 print:shadow-none print:p-0">
+            <div class="hidden print-block text-center mb-6 border-b-2 border-black pb-4">
+              <h1 class="text-xl font-bold uppercase">Laporan Rekapitulasi Bimbingan Skripsi</h1>
+              <h2 class="text-md font-semibold mt-1" id="print-subtitle">Semua Dosen | Semua Angkatan</h2>
+              <p class="text-xs text-gray-600 mt-1" id="print-tanggal"></p>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6">
+              <div class="p-3 rounded-lg border text-center print-border"><div class="text-xl sm:text-3xl font-bold text-indigo-600" id="rek-total">0</div><div class="text-[10px] sm:text-xs uppercase font-semibold mt-1">Total Mhs</div></div>
+              <div class="p-3 rounded-lg border text-center print-border"><div class="text-xl sm:text-3xl font-bold text-yellow-500" id="rek-pengajuan">0</div><div class="text-[10px] sm:text-xs uppercase font-semibold mt-1">Menunggu Sempro</div></div>
+              <div class="p-3 rounded-lg border text-center print-border"><div class="text-xl sm:text-3xl font-bold text-blue-500" id="rek-sempro">0</div><div class="text-[10px] sm:text-xs uppercase font-semibold mt-1">Tahap Semhas</div></div>
+              <div class="p-3 rounded-lg border text-center print-border"><div class="text-xl sm:text-3xl font-bold text-green-500" id="rek-pdd">0</div><div class="text-[10px] sm:text-xs uppercase font-semibold mt-1">Selesai PDD</div></div>
+            </div>
+            <h3 class="text-base sm:text-lg font-semibold text-gray-700 mb-4 print:text-black">Daftar Mahasiswa</h3>
+            <div class="overflow-x-auto border rounded-lg print:border-black print:rounded-none">
+              <table class="min-w-full text-sm text-left">
+                <thead class="bg-gray-50 print:bg-gray-200 border-b print:border-black">
+                  <tr><th class="px-4 py-3 font-semibold uppercase whitespace-nowrap">Nama & Angkatan</th><th class="px-4 py-3 font-semibold uppercase whitespace-nowrap">Dosen Pembimbing</th><th class="px-4 py-3 font-semibold uppercase w-1/2 whitespace-nowrap">Judul & Bidang Kajian</th><th class="px-4 py-3 font-semibold uppercase whitespace-nowrap">Status Terakhir</th></tr>
+                </thead>
+                <tbody id="tbl-rekap" class="divide-y print:divide-black"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- Modal Dosen -->
+  <div id="modalDosen" class="fixed inset-0 z-50 flex items-center justify-center hidden bg-black/50 modal opacity-0 p-4 overflow-y-auto">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 transform transition-all max-h-[90vh] flex flex-col">
+      <div class="flex justify-between items-center p-5 border-b flex-shrink-0">
+        <h3 class="text-lg font-semibold" id="modalDosenTitle">Tambah Dosen</h3>
+        <button onclick="closeModal('modalDosen')" class="text-gray-400 hover:text-gray-600 p-1"><i class="fas fa-times"></i></button>
+      </div>
+      <form id="formDosen" onsubmit="submitDosen(event)" class="p-5 overflow-y-auto space-y-4">
+        <input type="hidden" id="dosen_id">
+        <div><label class="block text-sm font-medium text-gray-700 mb-1">Nama Dosen Lengkap</label><input type="text" id="dosen_nama" required class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"></div>
+        <div><label class="block text-sm font-medium text-gray-700 mb-1">NIP/NIDN</label><input type="text" id="dosen_nip" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"></div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div><label class="block text-sm font-medium text-gray-700 mb-1">Prodi</label><input type="text" id="dosen_prodi" value="Ekonomi Syariah" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"></div>
+          <div><label class="block text-sm font-medium text-gray-700 mb-1">Kuota Bimbingan</label><input type="number" id="dosen_kuota" value="20" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"></div>
+        </div>
+        <div class="pt-4 border-t flex justify-end gap-3 flex-shrink-0"><button type="button" onclick="closeModal('modalDosen')" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg">Batal</button><button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg">Simpan Data</button></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Mahasiswa -->
+  <div id="modalMhs" class="fixed inset-0 z-50 flex items-center justify-center hidden bg-black/50 modal opacity-0 p-4 overflow-y-auto">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl mx-4 transform transition-all max-h-[90vh] flex flex-col">
+      <div class="flex justify-between items-center p-5 border-b flex-shrink-0">
+        <h3 class="text-lg font-semibold" id="modalMhsTitle">Data Mahasiswa Skripsi</h3>
+        <button onclick="closeModal('modalMhs')" class="text-gray-400 hover:text-gray-600 p-1"><i class="fas fa-times"></i></button>
+      </div>
+      <form id="formMhs" onsubmit="submitMhs(event)" class="p-5 overflow-y-auto space-y-4">
+        <input type="hidden" id="mhs_id">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div><label class="block text-sm font-medium text-gray-700 mb-1">Nama Mahasiswa</label><input type="text" id="mhs_nama" required class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"></div>
+          <div><label class="block text-sm font-medium text-gray-700 mb-1">NIM</label><input type="text" id="mhs_nim" required class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"></div>
+          <div><label class="block text-sm font-medium text-gray-700 mb-1">Angkatan</label><input type="text" id="mhs_angkatan" required class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"></div>
+          <div><label class="block text-sm font-medium text-gray-700 mb-1">Dosen Pembimbing</label><select id="mhs_dosen" required class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm"></select></div>
+        </div>
+        <div><label class="block text-sm font-medium text-gray-700 mb-1">Judul Skripsi</label><textarea id="mhs_judul" rows="2" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm"></textarea></div>
+        <div class="p-4 bg-blue-50 rounded-lg">
+          <h4 class="text-xs font-bold text-blue-800 mb-2 uppercase tracking-wide"><i class="fas fa-calendar-alt mr-2"></i>Tahapan Progres Skripsi</h4>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div><label class="block text-[11px] font-semibold text-gray-600 mb-1">Tgl Pengajuan</label><input type="date" id="mhs_tgl1" class="w-full px-2 py-1.5 text-xs border rounded-md"></div>
+            <div><label class="block text-[11px] font-semibold text-gray-600 mb-1">Tgl Sempro</label><input type="date" id="mhs_tgl2" class="w-full px-2 py-1.5 text-xs border rounded-md"></div>
+            <div><label class="block text-[11px] font-semibold text-gray-600 mb-1">Tgl Semhas</label><input type="date" id="mhs_tgl3" class="w-full px-2 py-1.5 text-xs border rounded-md"></div>
+            <div><label class="block text-[11px] font-semibold text-gray-600 mb-1">Tgl PDD</label><input type="date" id="mhs_tgl4" class="w-full px-2 py-1.5 text-xs border rounded-md"></div>
+          </div>
+        </div>
+        <div class="flex justify-end gap-3 mt-6 flex-shrink-0"><button type="button" onclick="closeModal('modalMhs')" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg">Batal</button><button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg">Simpan Data</button></div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    let globalDosen = [], globalMhs = [];
+    let chartStatus = null, chartDosen = null, chartBidang = null;
+    let chartRekapBidang = null, chartRekapBulan = null;
+    const colorStatus = { "Belum Mengajukan Judul": "bg-red-100 text-red-800 print:text-black", "Menunggu Sempro": "bg-yellow-100 text-yellow-800 print:text-black", "Menuju Semhas": "bg-blue-100 text-blue-800 print:text-black", "Menuju PDD": "bg-purple-100 text-purple-800 print:text-black", "Selesai Pendadaran": "bg-green-100 text-green-800 print:text-black" };
+    const paletteBidang = ['#f43f5e', '#ec4899', '#d946ef', '#8b5cf6', '#6366f1', '#3b82f6', '#0ea5e9', '#10b981', '#f59e0b'];
+
+    window.onload = () => { showPage('dashboard'); loadAllData(); };
+
+    function toggleMobileMenu() {
+      const sidebar = document.getElementById('sidebar'); const overlay = document.getElementById('sidebarOverlay');
+      if (sidebar.classList.contains('-translate-x-full')) {
+        sidebar.classList.remove('-translate-x-full'); overlay.classList.remove('hidden'); setTimeout(() => overlay.classList.remove('opacity-0'), 10);
+      } else {
+        sidebar.classList.add('-translate-x-full'); overlay.classList.add('opacity-0'); setTimeout(() => overlay.classList.add('hidden'), 300);
+      }
+    }
+
+    function showPage(pageId) {
+      if (window.innerWidth < 768) {
+        const sidebar = document.getElementById('sidebar'); const overlay = document.getElementById('sidebarOverlay');
+        sidebar.classList.add('-translate-x-full'); overlay.classList.add('opacity-0'); setTimeout(() => overlay.classList.add('hidden'), 300);
+      }
+      document.querySelectorAll('.page-section').forEach(el => el.classList.add('hidden'));
+      document.getElementById('page-' + pageId).classList.remove('hidden');
+      document.querySelectorAll('aside nav a').forEach(el => el.classList.remove('nav-active'));
+      document.getElementById('nav-' + pageId).classList.add('nav-active');
+      const titles = { 'dashboard': 'Dashboard Analitik', 'dosen': 'Data Dosen Pembimbing', 'mahasiswa': 'Data Mahasiswa Skripsi', 'rekap': 'Rekapitulasi Data & Export' };
+      document.getElementById('page-title').innerText = titles[pageId];
+      if(pageId === 'dashboard') initDashboard();
+      if(pageId === 'rekap') updateRekapTopCharts();
+    }
+
+    function loadAllData() {
+      google.script.run.withSuccessHandler(res => { globalDosen = res; populateDosenTable(); populateDosenSelect(); }).getDosen();
+      google.script.run.withSuccessHandler(res => { 
+          globalMhs = res; populateMhsTable(); initDashboard(); 
+          populateAngkatanSelect(); populateDashboardYearSelect(); 
+          populatePddYearSelect(); // Dropdown Tahun PDD
+          updateBidangChart(); updateRekapTopCharts(); 
+      }).getMahasiswa();
+    }
+
+    function populateDosenSelect() {
+      const selMhs = document.getElementById('mhs_dosen'); const selRekap = document.getElementById('select-rekap-dosen');
+      selMhs.innerHTML = '<option value="">Pilih Dosen...</option>'; selRekap.innerHTML = '<option value="">-- Semua Dosen --</option>';
+      globalDosen.forEach(d => { selMhs.innerHTML += `<option value="${d.ID_Dosen}">${d.Nama_Dosen}</option>`; selRekap.innerHTML += `<option value="${d.ID_Dosen}">${d.Nama_Dosen}</option>`; });
+    }
+
+    function populateAngkatanSelect() {
+      const selRekap = document.getElementById('select-rekap-angkatan'); selRekap.innerHTML = '<option value="">-- Semua Angkatan --</option>';
+      let angkatanSet = new Set(); globalMhs.forEach(m => { let angk = String(m.Angkatan || "").trim(); if(angk !== "" && angk !== "undefined") angkatanSet.add(angk); });
+      let angkatanArray = Array.from(angkatanSet).sort((a,b) => b - a);
+      angkatanArray.forEach(a => { selRekap.innerHTML += `<option value="${a}">${a}</option>`; });
+    }
+
+    function populateDashboardYearSelect() {
+      const sel = document.getElementById('dash-filter-tahun'); if(!sel) return; sel.innerHTML = '<option value="">-- Semua Tahun --</option>';
+      let tahunSet = new Set(); globalMhs.forEach(m => { let th = String(m.Angkatan || "").trim(); if(th !== "" && th !== "undefined") tahunSet.add(th); });
+      let tahunArr = Array.from(tahunSet).sort((a,b) => b - a); tahunArr.forEach(t => { sel.innerHTML += `<option value="${t}">Angkatan ${t}</option>`; });
+    }
+
+    // Ekstrak Tahun dari Tanggal PDD secara Otomatis
+    function populatePddYearSelect() {
+      const sel = document.getElementById('filter-pdd-tahun'); if(!sel) return;
+      sel.innerHTML = '<option value="">-- Semua Tahun --</option>';
+      let tahunSet = new Set();
+      globalMhs.forEach(m => {
+        if(m.Tgl_PDD && String(m.Tgl_PDD).trim() !== "") {
+          let d = new Date(m.Tgl_PDD);
+          if(!isNaN(d)) tahunSet.add(d.getFullYear());
+        }
+      });
+      let tahunArr = Array.from(tahunSet).sort((a,b) => b - a);
+      tahunArr.forEach(t => { sel.innerHTML += `<option value="${t}">${t}</option>`; });
+    }
+
+    /* KAMUS KATA KUNCI DIPERLUAS SECARA MASIF */
+    function getBidangKajian(judul) {
+      let j = String(judul || "").toLowerCase();
+      if (j.includes("halal") || j.includes("industri") || j.includes("wisata") || j.includes("pariwisata") || j.includes("kuliner") || j.includes("kosmetik") || j.includes("pangan") || j.includes("makanan") || j.includes("minuman") || j.includes("restoran") || j.includes("hotel") || j.includes("sertifikasi") || j.includes("label") || j.includes("mui") || j.includes("bpjph") || j.includes("thayyib") || j.includes("cafe") || j.includes("warung") || j.includes("rph") || j.includes("potong hewan") || j.includes("fashion") || j.includes("busana") || j.includes("pakaian") || j.includes("obat") || j.includes("farmasi") || j.includes("kesehatan") || j.includes("lifestyle") || j.includes("gaya hidup")) return "Ekonomi & Industri Halal";
+      else if (j.includes("zakat") || j.includes("infak") || j.includes("infaq") || j.includes("sedekah") || j.includes("shadaqah") || j.includes("wakaf") || j.includes("ziswaf") || j.includes("filantropi") || j.includes("baznas") || j.includes("laz") || j.includes("amil")) return "Filantropi ZISWAF";
+      else if (j.includes("bank") || j.includes("bprs") || j.includes("perbankan") || j.includes("pembiayaan") || j.includes("jasa keuangan") || j.includes("kredit") || j.includes("murabahah") || j.includes("mudharabah") || j.includes("musyarakah")) return "Perbankan Syariah";
+      else if (j.includes("asuransi") || j.includes("takaful") || j.includes("pegadaian") || j.includes("bmt") || j.includes("koperasi") || j.includes("kspps") || j.includes("fintech") || j.includes("pinjol") || j.includes("baitul maal")) return "Keuangan Non-Bank Syariah";
+      else if (j.includes("saham") || j.includes("sukuk") || j.includes("reksa dana") || j.includes("pasar modal") || j.includes("investasi") || j.includes("efek") || j.includes("obligasi")) return "Pasar Modal Syariah";
+      else if (j.includes("pemikiran") || j.includes("sejarah") || j.includes("tokoh") || j.includes("maqashid") || j.includes("filosofi") || j.includes("ibn") || j.includes("imam") || j.includes("konsep") || j.includes("perspektif")) return "Pemikiran Ekonomi Islam";
+      else if (j.includes("wirausaha") || j.includes("entrepreneur") || j.includes("umkm") || j.includes("ukm") || j.includes("bumdes") || j.includes("kreatif") || j.includes("ekraf") || j.includes("bisnis") || j.includes("pemasaran") || j.includes("pedagang") || j.includes("pasar") || j.includes("jual beli") || j.includes("pendapatan") || j.includes("ekonomi masyarakat")) return "Kewirausahaan, UMKM & BUMDes";
+      else if (j.includes("pembangunan") || j.includes("berkelanjutan") || j.includes("sustainable") || j.includes("green") || j.includes("hijau") || j.includes("lingkungan") || j.includes("kesejahteraan") || j.includes("kemiskinan") || j.includes("ekologi") || j.includes("sosial")) return "Pembangunan Berkelanjutan (Green Economy)";
+      else return "Lainnya / Tidak Terklasifikasi";
+    }
+
+    function updateBidangChart() {
+      const tahunFilter = document.getElementById('dash-filter-tahun').value;
+      let filteredMhs = tahunFilter !== "" ? globalMhs.filter(m => String(m.Angkatan || "").trim() === tahunFilter) : globalMhs;
+      let counts = { "Ekonomi & Industri Halal": 0, "Filantropi ZISWAF": 0, "Perbankan Syariah": 0, "Keuangan Non-Bank Syariah": 0, "Pasar Modal Syariah": 0, "Pemikiran Ekonomi Islam": 0, "Kewirausahaan, UMKM & BUMDes": 0, "Pembangunan Berkelanjutan (Green Economy)": 0, "Lainnya / Tidak Terklasifikasi": 0 };
+      filteredMhs.forEach(m => { let b = getBidangKajian(m.Judul); if(counts[b] !== undefined) counts[b]++; });
+      let maxVal = -1; let dominanField = "Tidak ada data";
+      for (let b in counts) { if(counts[b] > maxVal && counts[b] > 0) { maxVal = counts[b]; dominanField = b; } }
+      document.getElementById('insight-dominan').innerText = maxVal > 0 ? `${dominanField} (${maxVal} Mhs)` : "Tidak ada data";
+      document.getElementById('insight-count').innerText = filteredMhs.length;
+      const ctx = document.getElementById('bidangChart').getContext('2d');
+      if(chartBidang) chartBidang.destroy();
+      chartBidang = new Chart(ctx, { type: 'bar', data: { labels: Object.keys(counts), datasets: [{ data: Object.values(counts), backgroundColor: paletteBidang, borderRadius: 4 }] }, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, scales: { x: { beginAtZero: true, ticks: { stepSize: 1, color: '#9ca3af' } }, y: { ticks: { color: '#374151', font: { size: 10, weight: '500' } } } }, plugins: { legend: { display: false } } } });
+    }
+
+    function updateRekapBidangChart() {
+      let countsBidang = { "Ekonomi & Industri Halal": 0, "Filantropi ZISWAF": 0, "Perbankan Syariah": 0, "Keuangan Non-Bank Syariah": 0, "Pasar Modal Syariah": 0, "Pemikiran Ekonomi Islam": 0, "Kewirausahaan, UMKM & BUMDes": 0, "Pembangunan Berkelanjutan (Green Economy)": 0, "Lainnya / Tidak Terklasifikasi": 0 };
+      globalMhs.forEach(m => { let b = getBidangKajian(m.Judul); if(countsBidang[b] !== undefined) countsBidang[b]++; });
+      const ctxBidang = document.getElementById('rekapBidangChart').getContext('2d');
+      if(chartRekapBidang) chartRekapBidang.destroy();
+      chartRekapBidang = new Chart(ctxBidang, { type: 'bar', data: { labels: Object.keys(countsBidang), datasets: [{ data: Object.values(countsBidang), backgroundColor: paletteBidang, borderRadius: 4 }] }, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } }, y: { ticks: { font: { size: 10 } } } }, plugins: { legend: { display: false } } } });
+    }
+
+    function updatePddChart() {
+      const tahunFilter = document.getElementById('filter-pdd-tahun').value;
+      let countsBulan = { "Jan":0, "Feb":0, "Mar":0, "Apr":0, "Mei":0, "Jun":0, "Jul":0, "Ags":0, "Sep":0, "Okt":0, "Nov":0, "Des":0 };
+      const namaBulan = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Ags", "Sep", "Okt", "Nov", "Des"];
+      
+      globalMhs.forEach(m => {
+        if(m.Tgl_PDD && String(m.Tgl_PDD).trim() !== "") {
+          let d = new Date(m.Tgl_PDD);
+          if(!isNaN(d)) {
+            if(tahunFilter === "" || String(d.getFullYear()) === tahunFilter) {
+              countsBulan[namaBulan[d.getMonth()]]++;
+            }
+          }
+        }
+      });
+      const ctxBulan = document.getElementById('rekapBulanChart').getContext('2d');
+      if(chartRekapBulan) chartRekapBulan.destroy();
+      chartRekapBulan = new Chart(ctxBulan, {
+        type: 'line',
+        data: { labels: namaBulan, datasets: [{ label: 'Total PDD', data: Object.values(countsBulan), backgroundColor: 'rgba(16, 185, 129, 0.15)', borderColor: '#10b981', borderWidth: 2, pointBackgroundColor: '#047857', pointRadius: 4, fill: true, tension: 0.4 }] },
+        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }, plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } } }
+      });
+    }
+
+    function updateRekapTopCharts() {
+      updateRekapBidangChart();
+      updatePddChart();
+    }
+
+    function renderRekapAdvanced() {
+      const selectDosen = document.getElementById('select-rekap-dosen'); const selectAngkatan = document.getElementById('select-rekap-angkatan'); const selectBidang = document.getElementById('select-rekap-bidang');
+      const dosenId = selectDosen.value; const dosenName = dosenId === "" ? "Semua Dosen" : selectDosen.options[selectDosen.selectedIndex].text;
+      const angkatanVal = selectAngkatan.value; const angkatanName = angkatanVal === "" ? "Semua Angkatan" : angkatanVal;
+      const bidangVal = selectBidang.value; const bidangName = bidangVal === "" ? "Semua Bidang" : bidangVal;
+      
+      const container = document.getElementById('rekap-container'); const emptyState = document.getElementById('rekap-empty-state');
+      const btnExport = document.getElementById('btn-export'); const btnPrint = document.getElementById('btn-print');
+      const tbody = document.getElementById('tbl-rekap');
+      
+      if(dosenId === "" && angkatanVal === "" && bidangVal === "") { container.classList.add('hidden'); emptyState.classList.remove('hidden'); btnExport.disabled = true; btnPrint.disabled = true; return; }
+      container.classList.remove('hidden'); emptyState.classList.add('hidden'); btnExport.disabled = false; btnPrint.disabled = false;
+      
+      let titleStr = []; if(dosenId !== "") titleStr.push(`Dosen: ${dosenName}`); if(angkatanVal !== "") titleStr.push(`Angk: ${angkatanName}`); if(bidangVal !== "") titleStr.push(`Bidang: ${bidangName}`);
+      document.getElementById('print-subtitle').innerText = titleStr.length > 0 ? titleStr.join(" | ") : "Rekapitulasi Global";
+      let dt = new Date(); document.getElementById('print-tanggal').innerText = "Dicetak pada: " + dt.toLocaleDateString('id-ID') + " " + dt.toLocaleTimeString('id-ID');
+
+      let mhsBimbingan = globalMhs.filter(m => {
+          let matchDosen = (dosenId === "") || (String(m.ID_Dosen||"").trim() === dosenId) || (String(m.Nama_Dosen||"").trim() === dosenName);
+          let matchAngkatan = (angkatanVal === "") || (String(m.Angkatan||"").trim() === angkatanVal);
+          let matchBidang = (bidangVal === "") || (getBidangKajian(m.Judul) === bidangVal);
+          return matchDosen && matchAngkatan && matchBidang;
+      });
+
+      let stats = { total: mhsBimbingan.length, pengajuan: 0, sempro: 0, pdd: 0 };
+      mhsBimbingan.forEach(m => { let stat = String(m.Status || "").trim(); if(stat === "Menunggu Sempro") stats.pengajuan++; else if(stat.includes("Semhas") || stat.includes("Sempro")) stats.sempro++; else if(stat.includes("Selesai") || stat.includes("PDD")) stats.pdd++; });
+
+      document.getElementById('rek-total').innerText = stats.total; document.getElementById('rek-pengajuan').innerText = stats.pengajuan; document.getElementById('rek-sempro').innerText = stats.sempro; document.getElementById('rek-pdd').innerText = stats.pdd;
+
+      tbody.innerHTML = '';
+      if(mhsBimbingan.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" class="px-4 py-8 text-center text-gray-500 bg-gray-50"><i class="fas fa-box-open text-3xl mb-2 text-gray-300"></i><br>Tidak ada data bimbingan.</td></tr>`;
+      } else {
+        mhsBimbingan.forEach(m => {
+          let bidangStr = getBidangKajian(m.Judul);
+          tbody.innerHTML += `<tr><td class="px-4 py-3 font-semibold text-gray-800 print:text-black">${m.Nama}<br><span class="text-xs text-gray-500 font-normal">NIM: ${m.NIM} | Angk: ${m.Angkatan}</span></td><td class="px-4 py-3 text-xs text-gray-700 print:text-black max-w-[150px] truncate">${m.Nama_Dosen}</td><td class="px-4 py-3"><div class="text-xs text-gray-800 italic print:text-black leading-relaxed">${m.Judul || '-'}</div><div class="mt-1"><span class="inline-block bg-indigo-50 text-indigo-600 border border-indigo-100 px-1.5 py-0.5 rounded text-[10px] font-semibold"><i class="fas fa-tag mr-1"></i>${bidangStr}</span></div></td><td class="px-4 py-3"><span class="px-2 py-1 rounded text-[10px] font-semibold ${colorStatus[m.Status] || 'bg-gray-100'} print:border print:border-gray-400 print:bg-white whitespace-nowrap">${m.Status}</span></td></tr>`;
+        });
+      }
+    }
+
+    function exportToExcel() {
+      let csv = ["Nama Mahasiswa,NIM,Angkatan,Dosen Pembimbing,Judul Skripsi,Bidang Kajian,Status Terakhir"]; let rows = document.querySelectorAll("#tbl-rekap tr");
+      if(rows.length === 0 || rows[0].innerText.includes("Tidak ada")) { Swal.fire('Kosong', 'Tidak ada data', 'info'); return; }
+      for (let i = 0; i < rows.length; i++) {
+         let row = [], cols = rows[i].querySelectorAll("td"); let infoMhs = cols[0].innerText.split("\n");
+         let nama = infoMhs[0] ? infoMhs[0].replace(/"/g, '""') : ''; let detail = infoMhs[1] ? infoMhs[1] : ''; 
+         let nimMatch = detail.match(/NIM:\s*([^|]+)/); let nimStr = nimMatch ? nimMatch[1].trim() : '';
+         let angkMatch = detail.match(/Angk:\s*(.+)/); let angkStr = angkMatch ? angkMatch[1].trim() : '';
+         let infoJudul = cols[2].innerText.split("\n"); let judulStr = infoJudul[0] ? infoJudul[0].replace(/"/g, '""') : '';
+         let bidangStr = infoJudul[1] ? infoJudul[1].replace(/"/g, '""') : '';
+         row.push('"' + nama + '"'); row.push('"' + nimStr + '"'); row.push('"' + angkStr + '"');
+         row.push('"' + cols[1].innerText.replace(/"/g, '""') + '"'); row.push('"' + judulStr + '"'); row.push('"' + bidangStr + '"'); row.push('"' + cols[3].innerText.replace(/"/g, '""') + '"');
+         csv.push(row.join(","));
+      }
+      let csvFile = new Blob([csv.join("\n")], {type: "text/csv;charset=utf-8;"});
+      let downloadLink = document.createElement("a"); downloadLink.download = `Laporan_Rekap_SIREKSI.csv`; downloadLink.href = window.URL.createObjectURL(csvFile); downloadLink.style.display = "none"; document.body.appendChild(downloadLink); downloadLink.click();
+    }
+
+    function resetRekap() { document.getElementById('select-rekap-dosen').value = ""; document.getElementById('select-rekap-angkatan').value = ""; document.getElementById('select-rekap-bidang').value = ""; renderRekapAdvanced(); }
+    
+    function populateDosenTable() {
+      const tbody = document.getElementById('tbl-dosen'); tbody.innerHTML = '';
+      if(globalDosen.length===0){ tbody.innerHTML = `<tr><td colspan="5" class="text-center p-4">Kosong</td></tr>`; return;}
+      globalDosen.forEach(d => {
+        let bc = d.Total_Bimbingan >= d.Kuota ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800';
+        tbody.innerHTML += `<tr><td class="px-4 py-3.5 font-medium">${d.Nama_Dosen}</td><td class="px-4 py-3.5 text-gray-500">${d.NIP||'-'}</td><td class="px-4 py-3.5 text-gray-500">${d.Prodi}</td><td class="px-4 py-3.5 text-center"><span class="px-3 py-1 rounded-full text-xs font-semibold ${bc}">${d.Total_Bimbingan}/${d.Kuota}</span></td><td class="px-4 py-3.5 text-center whitespace-nowrap"><button onclick='editDosen(${JSON.stringify(d)})' class="text-blue-500 p-2 hover:bg-gray-100 rounded"><i class="fas fa-edit"></i></button> <button onclick='deleteDosen("${d.ID_Dosen}")' class="text-red-500 p-2 hover:bg-gray-100 rounded"><i class="fas fa-trash"></i></button></td></tr>`;
+      });
+    }
+
+    function populateMhsTable(filter = "") {
+      const tbody = document.getElementById('tbl-mhs'); tbody.innerHTML = '';
+      let filterText = String(filter).toLowerCase();
+      let f = globalMhs.filter(m => String(m.Nama || "").toLowerCase().includes(filterText) || String(m.NIM || "").includes(filterText) || getBidangKajian(m.Judul).toLowerCase().includes(filterText));
+      if(f.length === 0){ tbody.innerHTML = `<tr><td colspan="5" class="text-center p-4">Belum ada data mahasiswa.</td></tr>`; return;}
+      f.forEach(m => {
+        let fd = (d) => { if(!d || String(d).trim() === "") return "-"; let dt = new Date(d); return isNaN(dt) ? String(d) : dt.toLocaleDateString('id-ID'); };
+        tbody.innerHTML += `<tr><td class="px-4 py-4 font-semibold">${m.Nama}<div class="text-xs font-normal text-gray-500">${m.NIM} • Angk ${m.Angkatan}</div></td><td class="px-4 py-4 text-xs max-w-[120px] truncate">${m.Nama_Dosen}</td><td class="px-4 py-4"><span class="px-2 py-1 rounded text-[10px] font-semibold ${colorStatus[m.Status] || 'bg-gray-100'} whitespace-nowrap">${m.Status}</span></td><td class="px-4 py-4 text-xs">${fd(m.Tgl_PDD)}</td><td class="px-4 py-4 text-center whitespace-nowrap"><button onclick='editMhs(${JSON.stringify(m).replace(/'/g, "\\'")})' class="bg-indigo-50 text-indigo-600 p-2 rounded hover:bg-indigo-100 mr-1"><i class="fas fa-edit"></i></button><button onclick='deleteMhs("${m.ID_Mahasiswa}")' class="bg-red-50 text-red-600 p-2 rounded hover:bg-indigo-100"><i class="fas fa-trash"></i></button></td></tr>`;
+      });
+    }
+    function filterMahasiswa() { populateMhsTable(document.getElementById('searchMhs').value); }
+
+    function showModal(id) { document.getElementById(id).classList.remove('hidden'); setTimeout(()=>document.getElementById(id).classList.remove('opacity-0'),10); document.body.classList.add('modal-active'); }
+    function closeModal(id) { document.getElementById(id).opacity='0'; document.getElementById(id).classList.add('opacity-0'); setTimeout(()=>document.getElementById(id).classList.add('hidden'),250); document.body.classList.remove('modal-active'); }
+    function openModalDosen() { document.getElementById('formDosen').reset(); document.getElementById('dosen_id').value=""; document.getElementById('modalDosenTitle').innerText="Tambah Dosen"; showModal('modalDosen'); }
+    function editDosen(d) { document.getElementById('dosen_id').value=d.ID_Dosen; document.getElementById('dosen_nama').value=d.Nama_Dosen; document.getElementById('dosen_nip').value=d.NIP; document.getElementById('dosen_kuota').value=d.Kuota; document.getElementById('modalDosenTitle').innerText="Edit Dosen"; showModal('modalDosen'); }
+    function submitDosen(e){ e.preventDefault(); Swal.fire({title:'Menyimpan...', didOpen:()=>Swal.showLoading()}); google.script.run.withSuccessHandler(r=>{closeModal('modalDosen'); Swal.fire('Ok',r,'success'); loadAllData();}).withFailureHandler(err=>Swal.fire('Error',err.message,'error')).saveDosen({ID_Dosen:document.getElementById('dosen_id').value, Nama_Dosen:document.getElementById('dosen_nama').value, NIP:document.getElementById('dosen_nip').value, Prodi:document.getElementById('dosen_prodi').value, Kuota:document.getElementById('dosen_kuota').value}); }
+    function deleteDosen(id){ Swal.fire({title:'Hapus?', icon:'warning', showCancelButton:true}).then(r=>{ if(r.isConfirmed){ google.script.run.withSuccessHandler(x=>{Swal.fire('Terhapus',x,'success'); loadAllData();}).deleteDosen(id); }}); }
+    
+    function fmtDt(ds) { if(!ds) return ""; let d = new Date(ds); return isNaN(d) ? "" : d.toISOString().split('T')[0]; }
+    function openModalMhs() { document.getElementById('formMhs').reset(); document.getElementById('mhs_id').value=""; document.getElementById('modalMhsTitle').innerText="Tambah Mahasiswa"; showModal('modalMhs'); }
+    function editMhs(m) { document.getElementById('mhs_id').value=m.ID_Mahasiswa; document.getElementById('mhs_nama').value=m.Nama; document.getElementById('mhs_nim').value=m.NIM; document.getElementById('mhs_angkatan').value=m.Angkatan; document.getElementById('mhs_dosen').value=m.ID_Dosen; document.getElementById('mhs_judul').value=m.Judul; document.getElementById('mhs_tgl1').value=fmtDt(m.Tgl_Pengajuan); document.getElementById('mhs_tgl2').value=fmtDt(m.Tgl_Sempro); document.getElementById('mhs_tgl3').value=fmtDt(m.Tgl_Semhas); document.getElementById('mhs_tgl4').value=fmtDt(m.Tgl_PDD); document.getElementById('modalMhsTitle').innerText="Edit Mahasiswa"; showModal('modalMhs'); }
+    function submitMhs(e){ e.preventDefault(); Swal.fire({title:'Menyimpan...', didOpen:()=>Swal.showLoading()}); google.script.run.withSuccessHandler(r=>{closeModal('modalMhs'); Swal.fire('Ok',r,'success'); loadAllData();}).withFailureHandler(err=>Swal.fire('Error',err.message,'error')).saveMahasiswa({ID_Mahasiswa:document.getElementById('mhs_id').value, Nama:document.getElementById('mhs_nama').value, NIM:document.getElementById('mhs_nim').value, Angkatan:document.getElementById('mhs_angkatan').value, ID_Dosen:document.getElementById('mhs_dosen').value, Judul:document.getElementById('mhs_judul').value, Tgl_Pengajuan:document.getElementById('mhs_tgl1').value, Tgl_Sempro:document.getElementById('mhs_tgl2').value, Tgl_Semhas:document.getElementById('mhs_tgl3').value, Tgl_PDD:document.getElementById('mhs_tgl4').value}); }
+    function deleteMhs(id){ Swal.fire({title:'Hapus?', icon:'warning', showCancelButton:true}).then(r=>{ if(r.isConfirmed){ google.script.run.withSuccessHandler(x=>{Swal.fire('Terhapus',x,'success'); loadAllData();}).deleteMahasiswa(id); }}); }
+
+    function initDashboard() {
+      google.script.run.withSuccessHandler(d => {
+        document.getElementById('dash-total').innerText = d.stats.total; document.getElementById('dash-pengajuan').innerText = d.stats.pengajuan; document.getElementById('dash-sempro').innerText = d.stats.sempro; document.getElementById('dash-pdd').innerText = d.stats.pdd;
+        if(chartStatus) chartStatus.destroy(); if(chartDosen) chartDosen.destroy();
+        chartStatus = new Chart(document.getElementById('statusChart').getContext('2d'), { type: 'doughnut', data: { labels: ['PDD', 'Semhas', 'Sempro', 'Pengajuan', 'Belum'], datasets: [{ data: [d.stats.pdd, d.stats.semhas, d.stats.sempro, d.stats.pengajuan, d.stats.belum], backgroundColor: ['#22c55e', '#a855f7', '#3b82f6', '#eab308', '#ef4444'] }] }, options: { plugins: { legend: { position: window.innerWidth < 640 ? 'bottom' : 'right' } } }});
+        chartDosen = new Chart(document.getElementById('dosenChart').getContext('2d'), { type: 'bar', data: { labels: d.dosen.map(x=>x.Nama_Dosen), datasets: [{ label: 'Bimbingan', data: d.dosen.map(x=>x.Total_Bimbingan), backgroundColor: '#6366f1', borderRadius: 4 }] }, options: { scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }});
+      }).getDashboardData();
+    }
+  </script>
+</body>
+</html>
