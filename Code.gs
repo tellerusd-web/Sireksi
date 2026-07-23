@@ -190,3 +190,30 @@ function getDashboardData() {
   });
   return { stats, dosen };
 }
+// ==========================================
+// TAMBAHAN API ENDPOINT UNTUK VERCEL (FIXED)
+// ==========================================
+function doGet(e) {
+  // Cek apakah ada parameter 'action' dari fetch Vercel
+  if (e && e.parameter && e.parameter.action) {
+    var action = e.parameter.action;
+    var outputData = "";
+    
+    if (action === "getDosen") {
+      outputData = JSON.stringify(getDosen());
+    } else if (action === "getMahasiswa") {
+      outputData = JSON.stringify(getMahasiswa());
+    } else if (action === "getDashboard") {
+      outputData = JSON.stringify(getDashboardData());
+    }
+    
+    return ContentService.createTextOutput(outputData)
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+  
+  // Default: Merender tampilan web app jika dibuka langsung dari link GAS
+  return HtmlService.createHtmlOutputFromFile('Index')
+    .setTitle('SIREKSI - Rekap Skripsi Otomatis')
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+}
